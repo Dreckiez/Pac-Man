@@ -2,6 +2,7 @@ import pygame
 import math
 import random
 from queue import Queue
+from queue import PriorityQueue
 import sys
 
 pygame.init()
@@ -41,6 +42,7 @@ def Gen_PandG():
             maze[Ghost_posx][Ghost_posy] = 2
             gen = False
     return (Ghost_posx, Ghost_posy), (Pacman_posx, Pacman_posy)
+
 
 def BFS(Ghost, Pacman):
     traversal=[]
@@ -111,6 +113,56 @@ def BFS(Ghost, Pacman):
 
     return traversal, path
 
+def peek_priority_queue(pq):
+    temp = []
+    while not pq.empty():
+        item = pq.get()
+        print(item, end=", ")  # Print each item
+        temp.append(item)  # Store it
+
+    # Restore the queue
+    for item in temp:
+        pq.put(item)
+    print()  # New line
+def UCS(Ghost, Pacman):
+    traversal = []
+    path = []
+    parent = {}
+    pq = PriorityQueue()
+    visited = set()
+    cost = {Ghost: 0}
+    pq.put((0, Ghost))
+    visited.add(Ghost)
+    parent[Ghost] = None
+
+    while not pq.empty():
+        current_cost, current_node = pq.get()
+        traversal.append(current_node)
+        if current_node == Pacman:
+            break
+        up = (current_node[0] - 1, current_node[1])
+        down = (current_node[0] + 1, current_node[1])
+        left = (current_node[0], current_node[1] - 1)
+        right = (current_node[0], current_node[1] + 1)
+
+        neighbors = [up, down, left, right]
+
+        for neighbor in neighbors:
+            if 0 <= neighbor[0] < len(maze) and 0 <= neighbor[1] < len(maze[0]) and (maze[neighbor[0]][neighbor[1]] == 0 or maze[neighbor[0]][neighbor[1]]==1):
+                new_cost = cost[current_node] + 1
+                if neighbor not in visited or new_cost < cost.get(neighbor, float('inf')):
+                    cost[neighbor] = new_cost
+                    pq.put((new_cost, neighbor))
+                    parent[neighbor] = current_node
+                    visited.add(neighbor)  # Đánh dấu ngay khi thêm vào hàng đợi
+
+    current = Pacman
+    while current is not None:
+        path.append(current)
+        current = parent.get(current)
+    path.reverse()
+    return traversal, path
+
 def Draw_Search(traverse):
     for coors in traverse:
         pygame.draw.circle(screen, "red", (coors[1] * 25 + 25 * 0.5 + 125, coors[0] * 25 + 25 * 0.5), 5)
@@ -140,8 +192,11 @@ def Draw_Maze():
                 pygame.draw.line(screen, "white", pygame.Vector2(j * 25 + center, i * 25 + 25*0.5), pygame.Vector2(j * 25 + 25 + center, i * 25 + 25*0.5), 3)
             elif maze[i][j] == 1:
                 screen.blit(Pacman_Img, (j * 25 - 7 + center, i * 25 - 5))
-            elif maze[i][j] == 2:
+            elif maze[i][j] == 'B':
                 screen.blit(BlueGhost, (j * 25 - 7 + center, i * 25 - 5))
+            elif maze[i][j] == 'O':
+                screen.blit(OrangeGhost, (j * 25 - 7 + center, i * 25 - 5))
+
 
 
 
@@ -182,15 +237,20 @@ if argument_number == 3:
         sys.exit()
 
     maze[Pacman_pos[0]][Pacman_pos[1]] = 1
-    maze[Ghost_pos[0]][Ghost_pos[1]] = 2
+    
 
     if sys.argv[1] == "BFS":
+        maze[Ghost_pos[0]][Ghost_pos[1]] = 'B'
         traverses, path = BFS(Ghost_pos, Pacman_pos)
+    elif sys.argv[1] == "UCS":
+        maze[Ghost_pos[0]][Ghost_pos[1]] = 'O'
+        traverses, path = UCS (Ghost_pos, Pacman_pos)
     else:
         print("Invalid Search Algorithm")
         sys.exit()
+    
+    
     """ elif sys.argv[1] == "DFS":
-    elif sys.argv[1] == "UCS":
     elif sys.argv[1] == "A*": """
 
 current_cells = 0
@@ -209,13 +269,14 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         elif event.type == Draw_Search_Event:
-            visualize_search.append(traverses[current_cells])
-            if len(visualize_search) == len(traverses):
-                pygame.time.set_timer(Draw_Search_Event, 0)
-                pygame.time.set_timer(Draw_Path_Event, 100)
-                current_cells -= current_cells 
-            else:
-                current_cells += 1
+            if current_cells < len(traverses): #Add this check
+                visualize_search.append(traverses[current_cells])
+                if len(visualize_search) == len(traverses):
+                    pygame.time.set_timer(Draw_Search_Event, 0)
+                    pygame.time.set_timer(Draw_Path_Event, 100)
+                    current_cells -= current_cells
+                else:
+                    current_cells += 1
         elif event.type == Draw_Path_Event:
             visualize_path.append(path[current_cells])
             if len(visualize_path) == len(path):
