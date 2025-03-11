@@ -9,17 +9,17 @@ screen = pygame.display.set_mode((1000,850))
 clock = pygame.time.Clock()
 running = True
 maze = []
-Pacman_Img = pygame.transform.scale(pygame.image.load("assets/player_images/1.png"), (40, 40))
-BlueGhost = pygame.transform.scale(pygame.image.load("assets/ghost_images/blue.png"), (40, 40))
-RedGhost = pygame.transform.scale(pygame.image.load("assets/ghost_images/red.png"), (40, 40))
-PinkGhost = pygame.transform.scale(pygame.image.load("assets/ghost_images/pink.png"), (40, 40))
-OrangeGhost = pygame.transform.scale(pygame.image.load("assets/ghost_images/orange.png"), (40, 40))
+Pacman_Img = pygame.transform.scale(pygame.image.load("Pac-Man/assets/player_images/1.png"), (40, 40))
+BlueGhost = pygame.transform.scale(pygame.image.load("Pac-Man/assets/ghost_images/blue.png"), (40, 40))
+RedGhost = pygame.transform.scale(pygame.image.load("Pac-Man/assets/ghost_images/red.png"), (40, 40))
+PinkGhost = pygame.transform.scale(pygame.image.load("Pac-Man/assets/ghost_images/pink.png"), (40, 40))
+OrangeGhost = pygame.transform.scale(pygame.image.load("Pac-Man/assets/ghost_images/orange.png"), (40, 40))
 
 Pacman_pos_cases = [(9,7), (2, 3), (6,22), (2,2), (21,10)]
 Ghost_pos_cases = [(27,7), (2,8), (6,2), (30,27), (14,7)]
 
 def Maze_Init():
-    file = open("maze.txt", "r")
+    file = open("Pac-Man/maze.txt", "r")
     for line in file:
         int_list = []
         for i in line.strip().split():
@@ -111,6 +111,49 @@ def BFS(Ghost, Pacman):
 
     return traversal, path
 
+def DFS(Ghost, Pacman):
+    traversal = []
+    stack = [Ghost]
+    visited = set()
+    parent = {}
+    path = []
+
+    visited.add(Ghost)
+    parent[Ghost] = None
+
+    while stack:
+        front = stack.pop()
+        traversal.append(front)
+
+        if front == Pacman:
+            break
+
+        up = (front[0] - 1, front[1])
+        down = (front[0] + 1, front[1])
+        left = (front[0], front[1] - 1)
+        right = (front[0], front[1] + 1)
+
+        for move in [up, down, left, right]:
+            if 0 <= move[0] < len(maze) and 0 <= move[1] < len(maze[0]) and maze[move[0]][move[1]] == 0:
+                if move not in visited:
+                    visited.add(move)
+                    parent[move] = front
+                    stack.append(move)
+
+    # Tạo đường đi từ Ghost đến Pacman
+    current = Pacman
+    while current and current in parent:
+        path.append(current)
+        current = parent[current]
+    
+    if path:
+        path.remove(Pacman)
+        path.reverse()
+
+    traversal.remove(Ghost)
+
+    return traversal, path
+
 def Draw_Search(traverse):
     for coors in traverse:
         pygame.draw.circle(screen, "red", (coors[1] * 25 + 25 * 0.5 + 125, coors[0] * 25 + 25 * 0.5), 5)
@@ -147,9 +190,9 @@ def Draw_Maze():
 
 Maze_Init()
 
-# Ghost_coors, Pacman_coors = Gen_PandG()
+Ghost_coors, Pacman_coors = Gen_PandG()
 
-# traverses = BFS(Ghost_coors, Pacman_coors)
+traverses = BFS(Ghost_coors, Pacman_coors)
 
 traverses = []
 path = []
@@ -186,10 +229,12 @@ if argument_number == 3:
 
     if sys.argv[1] == "BFS":
         traverses, path = BFS(Ghost_pos, Pacman_pos)
+    elif sys.argv[1] == "DFS":
+        traverses, path = DFS(Ghost_pos, Pacman_pos)
     else:
         print("Invalid Search Algorithm")
         sys.exit()
-    """ elif sys.argv[1] == "DFS":
+    """ 
     elif sys.argv[1] == "UCS":
     elif sys.argv[1] == "A*": """
 
