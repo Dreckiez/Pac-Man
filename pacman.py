@@ -2,7 +2,9 @@ import pygame
 import math
 import random
 from queue import Queue
+from queue import PriorityQueue
 import sys
+import heapq
 
 pygame.init()
 screen = pygame.display.set_mode((1000,850))
@@ -48,7 +50,6 @@ def BFS(Ghost, Pacman):
     visited = set()
     parent = {}
     path = []
-
     visited.add(Ghost)
     parent[Ghost] = None
     q.put(Ghost)
@@ -102,6 +103,56 @@ def BFS(Ghost, Pacman):
     while current != None:
         path.append(current)
         current = parent[current]
+    path.remove(Pacman)
+    path.remove(Ghost)
+    path.reverse()
+
+    traversal.remove(Ghost)
+    traversal.remove(Pacman)
+
+    return traversal, path
+
+
+
+def A_star(Ghost, Pacman):
+    def f(node, goal):
+        return abs(node[0] - goal[0]) + abs(node[1] - goal[1])
+    traversal = []
+    path = []
+    parent = {}
+    pq = PriorityQueue()
+    cost = {Ghost: 0}
+    parent[Ghost] = None
+    pq.put((f(Ghost, Pacman), 0, Ghost))
+
+    while not pq.empty():
+        current = pq.get()
+        traversal.append(current[2])
+        
+        if current[2] == Pacman:
+            break
+
+        neighbors = [
+            (current[2][0] - 1, current[2][1]),
+            (current[2][0] + 1, current[2][1]),
+            (current[2][0], current[2][1] - 1),
+            (current[2][0], current[2][1] + 1)
+        ]
+
+        for neighbor in neighbors:
+            if 0 <= neighbor[0] < len(maze) and 0 <= neighbor[1] < len(maze[0]) and (maze[neighbor[0]][neighbor[1]] in [0, 1]):
+                new_cost = cost[current[2]] + 1
+
+                if neighbor not in cost or new_cost < cost[neighbor]:
+                    cost[neighbor] = new_cost
+                    f_value = new_cost + f(neighbor, Pacman)
+                    pq.put((f_value, new_cost, neighbor))
+                    parent[neighbor] = current[2]
+
+    current = Pacman
+    while current is not None:
+        path.append(current)
+        current = parent.get(current)
     path.remove(Pacman)
     path.remove(Ghost)
     path.reverse()
@@ -186,6 +237,9 @@ if argument_number == 3:
 
     if sys.argv[1] == "BFS":
         traverses, path = BFS(Ghost_pos, Pacman_pos)
+    elif sys.argv[1] == "A":
+        traverses, path = A_star(Ghost_pos, Pacman_pos)
+        
     else:
         print("Invalid Search Algorithm")
         sys.exit()
@@ -228,7 +282,7 @@ while running:
 
     Draw_Maze()
 
-    Draw_Search(visualize_search)
+    # Draw_Search(visualize_search)
 
     Draw_Path(visualize_path)
 
