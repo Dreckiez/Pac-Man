@@ -8,10 +8,15 @@ python pacman.py <Tên Search Algo> <Số thứ tự Test Case>
 ```
 Example:
 ```bash
-python pacman.py BFS 4
+python pacman.py A* 4
 ```
 Ghi sai tên Search sẽ báo lỗi: Invalid Search Algorithm<br>
 Ghi sai số thứ tự Test Case (có 5 cái mà ghi 6) báo: Invalid Test Case
+
+- Level 5: Chạy ổn nhưng thỉnh thoảng có vài case UCS hoặc BFS/DFS báo lỗi current = parent[current] ngay khi vào loop => parent[current/Pacman] không có => không biết tại sao
+```bash
+python pacman.py all
+```
 
 ### Biến
 - Pacman_pos_cases, Ghost_pos_cases: 1 list chứa các vị trí được chọn sẵn để lấy data từ các Search
