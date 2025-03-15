@@ -1,8 +1,10 @@
 import pygame
-import math
-import random
-from queue import Queue
+import time
 import sys
+import tracemalloc
+import search
+import utils
+import draw
 
 pygame.init()
 screen = pygame.display.set_mode((1000,850))
@@ -15,137 +17,15 @@ RedGhost = pygame.transform.scale(pygame.image.load("assets/ghost_images/red.png
 PinkGhost = pygame.transform.scale(pygame.image.load("assets/ghost_images/pink.png"), (40, 40))
 OrangeGhost = pygame.transform.scale(pygame.image.load("assets/ghost_images/orange.png"), (40, 40))
 
+Draw_Search_Event = pygame.USEREVENT + 1
+Draw_Path_Event = pygame.USEREVENT + 2
+Draw_Ghost_Move = pygame.USEREVENT + 3
+
 Pacman_pos_cases = [(9,7), (2, 3), (6,22), (2,2), (21,10)]
 Ghost_pos_cases = [(27,7), (2,8), (6,2), (30,27), (14,7)]
 
-def Maze_Init():
-    file = open("maze.txt", "r")
-    for line in file:
-        int_list = []
-        for i in line.strip().split():
-            int_list.append(int(i))
-        maze.append(int_list)
-    file.close()
 
-def Gen_PandG():
-    gen = True
-    while gen:
-        Ghost_posx = random.randint(2, 30)
-        Ghost_posy = random.randint(2, 27)
-        Pacman_posx = random.randint(2, 30)
-        Pacman_posy = random.randint(2, 27)
-        if maze[Ghost_posx][Ghost_posy] == 0 and maze[Pacman_posx][Pacman_posy] == 0 and (Ghost_posx, Ghost_posy) != (Pacman_posx, Pacman_posy):
-            print(Pacman_posx, Pacman_posy)
-            print(Ghost_posx, Ghost_posy)
-            maze[Pacman_posx][Pacman_posy] = 1
-            maze[Ghost_posx][Ghost_posy] = 2
-            gen = False
-    return (Ghost_posx, Ghost_posy), (Pacman_posx, Pacman_posy)
-
-def BFS(Ghost, Pacman):
-    traversal=[]
-    q = Queue()
-    visited = set()
-    parent = {}
-    path = []
-
-    visited.add(Ghost)
-    parent[Ghost] = None
-    q.put(Ghost)
-
-    while not q.empty():
-        front = q.get()
-        traversal.append(front)
-
-        up = (front[0] - 1, front[1])
-        down = (front[0] + 1, front[1])
-        left = (front[0], front[1] - 1)
-        right = (front[0], front[1] + 1)
-
-        if maze[up[0]][up[1]] == 0 and not up in visited:
-            visited.add(up)
-            parent[up] = front
-            q.put(up)
-        elif up == Pacman:
-            parent[up] = front
-            traversal.append(up)
-            break
-
-        if maze[left[0]][left[1]] == 0 and not left in visited:
-            visited.add(left)
-            parent[left] = front
-            q.put(left)
-        elif left == Pacman:
-            parent[left] = front
-            traversal.append(left)
-            break
-
-        if maze[down[0]][down[1]] == 0 and not down in visited:
-            visited.add(down)
-            parent[down] = front
-            q.put(down)
-        elif down == Pacman:
-            parent[down] = front
-            traversal.append(down)
-            break
-
-        if maze[right[0]][right[1]] == 0 and not right in visited:
-            visited.add(right)
-            parent[right] = front
-            q.put(right)
-        elif right == Pacman:
-            parent[right] = front
-            traversal.append(right)
-            break
-    
-    current = Pacman
-    while current != None:
-        path.append(current)
-        current = parent[current]
-    path.remove(Pacman)
-    path.remove(Ghost)
-    path.reverse()
-
-    traversal.remove(Ghost)
-    traversal.remove(Pacman)
-
-    return traversal, path
-
-def Draw_Search(traverse):
-    for coors in traverse:
-        pygame.draw.circle(screen, "red", (coors[1] * 25 + 25 * 0.5 + 125, coors[0] * 25 + 25 * 0.5), 5)
-
-def Draw_Path(path):
-    for coors in path:
-        pygame.draw.circle(screen, "white", (coors[1] * 25 + 25 * 0.5 + 125, coors[0] * 25 + 25 * 0.5), 5)
-
-def Draw_Maze():
-    center = 125
-    PI = math.pi
-    for i in range(len(maze)):
-        for j in range(len(maze[i])):
-            if maze[i][j] == 3:
-                pygame.draw.line(screen, "blue", pygame.Vector2(j * 25 + 25*0.5 + center, i * 25 + 25), pygame.Vector2(j * 25 + 25*0.5 + center, i * 25), 3)
-            elif maze[i][j] == 4:
-                pygame.draw.line(screen, "blue", pygame.Vector2(j * 25 + center, i * 25 + 25*0.5), pygame.Vector2(j * 25 + 25 + center, i * 25 + 25*0.5), 3)
-            elif maze[i][j] == 5:
-                pygame.draw.arc(screen, "blue", pygame.Rect(j * 25 - 25*0.5 + center, i * 25 + 25*0.5, 25, 25), 0, PI/2, 3)
-            elif maze[i][j] == 6:
-                pygame.draw.arc(screen, "blue", pygame.Rect(j * 25 + 25*0.5 + center, i * 25 + 25*0.5, 25, 25), PI/2, PI, 3)
-            elif maze[i][j] == 7:
-                pygame.draw.arc(screen, "blue", pygame.Rect(j * 25 + 25*0.5 + center, i * 25 - 25*0.5, 25, 25), PI, 3*PI/2, 3)
-            elif maze[i][j] == 8:
-                pygame.draw.arc(screen, "blue", pygame.Rect(j * 25 - 25*0.5 + center, i * 25 - 25*0.5, 25, 25), 3*PI/2, 0, 3)
-            elif maze[i][j] == 9:
-                pygame.draw.line(screen, "white", pygame.Vector2(j * 25 + center, i * 25 + 25*0.5), pygame.Vector2(j * 25 + 25 + center, i * 25 + 25*0.5), 3)
-            elif maze[i][j] == 1:
-                screen.blit(Pacman_Img, (j * 25 - 7 + center, i * 25 - 5))
-            elif maze[i][j] == 2:
-                screen.blit(BlueGhost, (j * 25 - 7 + center, i * 25 - 5))
-
-
-
-Maze_Init()
+utils.Maze_Init(maze)
 
 # Ghost_coors, Pacman_coors = Gen_PandG()
 
@@ -156,52 +36,126 @@ path = []
 
 argument_number = len(sys.argv)
 
+Pacman_pos = ()
+Ghosts_pos = [(0,0),(0,0),(0,0),(0,0)]
 
-if argument_number == 3:
+if argument_number == 2:
+    if sys.argv[1] == "all":
+        Pacman_pos, Ghosts_pos = utils.Gen_PandG(maze)
+        traverses, temp_path = search.BFS(Ghosts_pos[0], Pacman_pos, maze)
+        path.append(temp_path)
+        
+        traverses, temp_path = search.DFS(Ghosts_pos[1], Pacman_pos, maze)
+        path.append(temp_path)
 
-    Pacman_pos = ()
-    Ghost_pos = ()
+        traverses, temp_path = search.UCS(Ghosts_pos[2], Pacman_pos, maze)
+        path.append(temp_path)
+
+        traverses, temp_path = search.A_star(Ghosts_pos[3], Pacman_pos, maze)
+        path.append(temp_path)
+
+        pygame.time.set_timer(Draw_Ghost_Move, 300)
+    else:
+        print("Invalid Test Case")
+        sys.exit()
+elif argument_number == 3:
+    Temp_pos = ()
 
     if int(sys.argv[2]) == 1: # Vertical Search
         Pacman_pos = Pacman_pos_cases[0]
-        Ghost_pos = Ghost_pos_cases[0]
+        Temp_pos = Ghost_pos_cases[0]
     elif int(sys.argv[2]) == 2: # Neighboring
         Pacman_pos = Pacman_pos_cases[1]
-        Ghost_pos = Ghost_pos_cases[1]
+        Temp_pos = Ghost_pos_cases[1]
     elif int(sys.argv[2]) == 3: # Horizontal Search
         Pacman_pos = Pacman_pos_cases[2]
-        Ghost_pos = Ghost_pos_cases[2]
+        Temp_pos = Ghost_pos_cases[2]
     elif int(sys.argv[2]) == 4: # Across
         Pacman_pos = Pacman_pos_cases[3]
-        Ghost_pos = Ghost_pos_cases[3]
+        Temp_pos = Ghost_pos_cases[3]
     elif int(sys.argv[2]) == 5: # Some Obstacles
         Pacman_pos = Pacman_pos_cases[4]
-        Ghost_pos = Ghost_pos_cases[4]
+        Temp_pos = Ghost_pos_cases[4]
     else:
         print("Invalid Test Case")
         sys.exit()
 
     maze[Pacman_pos[0]][Pacman_pos[1]] = 1
-    maze[Ghost_pos[0]][Ghost_pos[1]] = 2
 
     if sys.argv[1] == "BFS":
-        traverses, path = BFS(Ghost_pos, Pacman_pos)
+        Ghosts_pos[0] = Temp_pos
+        maze[Ghosts_pos[0][0]][Ghosts_pos[0][1]] = 11
+        tracemalloc.start()
+        start = time.perf_counter()
+
+        traverses, path = search.BFS(Ghosts_pos[0], Pacman_pos, maze)
+        
+        end = time.perf_counter()
+        cur, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        print("BFS")
+        print(f"Memory Usage: {peak/1024: .2f} KB")
+        print(f"Runtime: {end - start: .6f} seconds")
+        print("Expanded Nodes: ", len(traverses) - 1) # Early Stopping
+    elif sys.argv[1] == "DFS":
+        Ghosts_pos[1] = Temp_pos
+        maze[Ghosts_pos[1][0]][Ghosts_pos[1][1]] = 12
+        tracemalloc.start()
+        start = time.perf_counter()
+
+        traverses, path = search.DFS(Ghosts_pos[1], Pacman_pos, maze)
+        
+        end = time.perf_counter()
+        cur, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        print("DFS")
+        print(f"Memory Usage: {peak/1024: .2f} KB")
+        print(f"Runtime: {end - start: .6f} seconds")
+        print("Expanded Nodes: ", len(traverses) - 1) # Early Stopping
+    elif sys.argv[1] == "UCS":
+        Ghosts_pos[2] = Temp_pos
+        maze[Ghosts_pos[2][0]][Ghosts_pos[2][1]] = 13
+        tracemalloc.start()
+        start = time.perf_counter()
+
+        traverses, path = search.UCS(Ghosts_pos[2], Pacman_pos, maze)
+        
+        end = time.perf_counter()
+        cur, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        print("UCS")
+        print(f"Memory Usage: {peak/1024: .2f} KB")
+        print(f"Runtime: {end - start: .6f} seconds")
+        print("Expanded Nodes: ", len(traverses))
+    elif sys.argv[1] == "A*":
+        Ghosts_pos[3] = Temp_pos
+        maze[Ghosts_pos[3][0]][Ghosts_pos[3][1]] = 13
+        tracemalloc.start()
+        start = time.perf_counter()
+
+        traverses, path = search.A_star(Ghosts_pos[3], Pacman_pos, maze)
+        
+        end = time.perf_counter()
+        cur, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+
+        print("A*")
+        print(f"Memory Usage: {peak/1024: .2f} KB")
+        print(f"Runtime: {end - start: .6f} seconds")
+        print("Expanded Nodes: ", len(traverses))
     else:
         print("Invalid Search Algorithm")
         sys.exit()
-    """ elif sys.argv[1] == "DFS":
-    elif sys.argv[1] == "UCS":
-    elif sys.argv[1] == "A*": """
+    
+    pygame.time.set_timer(Draw_Search_Event, 300)
 
 current_cells = 0
 visualize_search = []
 visualize_path = []
-
-
-Draw_Search_Event = pygame.USEREVENT + 1
-Draw_Path_Event = pygame.USEREVENT + 2
-
-pygame.time.set_timer(Draw_Search_Event, 300)
+visualize_move = []
 
 while running:
 
@@ -213,7 +167,7 @@ while running:
             if len(visualize_search) == len(traverses):
                 pygame.time.set_timer(Draw_Search_Event, 0)
                 pygame.time.set_timer(Draw_Path_Event, 100)
-                current_cells -= current_cells 
+                current_cells -= current_cells
             else:
                 current_cells += 1
         elif event.type == Draw_Path_Event:
@@ -222,15 +176,26 @@ while running:
                 pygame.time.set_timer(Draw_Path_Event, 0)
             else:
                 current_cells += 1
-
+        elif event.type == Draw_Ghost_Move:
+            if current_cells < len(path[0]):
+                Ghosts_pos[0] = path[0][current_cells]
+            if current_cells < len(path[1]):
+                Ghosts_pos[1] = path[1][current_cells]
+            if current_cells < len(path[2]):
+                Ghosts_pos[2] = path[2][current_cells]
+            if current_cells < len(path[3]):
+                Ghosts_pos[3] = path[3][current_cells]
+            current_cells += 1
 
     screen.fill("black")
 
-    Draw_Maze()
+    draw.Draw_Maze(screen, maze)
+    draw.Draw_Pacman(screen, Pacman_Img, Pacman_pos)
+    draw.Draw_Ghosts(screen, BlueGhost, PinkGhost, OrangeGhost, RedGhost, Ghosts_pos)
 
-    Draw_Search(visualize_search)
+    draw.Draw_Search(screen, visualize_search)
 
-    Draw_Path(visualize_path)
+    draw.Draw_Path(screen, visualize_path)
 
     pygame.display.update()
 
