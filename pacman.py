@@ -4,7 +4,6 @@ import random
 from queue import Queue
 from queue import PriorityQueue
 import sys
-import heapq
 
 pygame.init()
 screen = pygame.display.set_mode((1000,850))
