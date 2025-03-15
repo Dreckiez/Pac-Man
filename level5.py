@@ -41,30 +41,15 @@ def get_neighbors(pos):
             neighbors.append((nx, ny))
     return neighbors
 
-def BFS(Ghost, Pacman):
-    queue = Queue()
-    queue.put(Ghost)
-    parent = {Ghost: None}
-    
-    while not queue.empty():
-        current = queue.get()
-        if current == Pacman:
-            break
-        for neighbor in get_neighbors(current):
-            if neighbor not in parent:
-                parent[neighbor] = current
-                queue.put(neighbor)
-    
-    return reconstruct_path(parent, Ghost, Pacman)
-
 def UCS(Ghost, Pacman):
     pq = PriorityQueue()
     pq.put((0, Ghost))
     parent = {Ghost: None}
     cost = {Ghost: 0}
-
+    traversal = []
     while not pq.empty():
         current_cost, current_node = pq.get()
+        traversal.append(current_node)
         if current_node == Pacman:
             break
         for neighbor in get_neighbors(current_node):
@@ -74,22 +59,43 @@ def UCS(Ghost, Pacman):
                 pq.put((new_cost, neighbor))
                 parent[neighbor] = current_node
     
-    return reconstruct_path(parent, Ghost, Pacman)
+    return traversal, reconstruct_path(parent, Ghost, Pacman)
 
 def DFS(Ghost, Pacman):
     stack = [Ghost]
     parent = {Ghost: None}
-
+    traversal = []
     while stack:
         current = stack.pop()
-        if current == Pacman:
-            break
+        traversal.append(current)
         for neighbor in get_neighbors(current):
             if neighbor not in parent:
+                if neighbor == Pacman:  # Nếu gặp Pac-Man thì dừng ngay
+                    parent[neighbor]= current
+                    traversal.append(neighbor)
+                    return traversal,reconstruct_path(parent, Ghost, Pacman)
                 parent[neighbor] = current
                 stack.append(neighbor)
     
-    return reconstruct_path(parent, Ghost, Pacman)
+    return traversal,reconstruct_path(parent, Ghost, Pacman)
+def BFS(Ghost, Pacman):
+    queue = Queue()
+    queue.put(Ghost)
+    parent = {Ghost: None}
+    traversal = []
+    while not queue.empty():
+        current = queue.get()
+        traversal.append(current)
+        for neighbor in get_neighbors(current):
+            if neighbor not in parent:
+                if neighbor == Pacman:  # Nếu gặp Pac-Man thì dừng ngay
+                    parent[neighbor] = current
+                    traversal.append(neighbor)
+                    return traversal,reconstruct_path(parent, Ghost, Pacman)
+                parent[neighbor] = current
+                queue.put(neighbor)
+    
+    return traversal, reconstruct_path(parent, Ghost, Pacman)
 
 def reconstruct_path(parent, start, end):
     path = []
@@ -154,9 +160,9 @@ DFS_pos = Ghost_pos_cases[2]
 maze[UCS_pos[0]][UCS_pos[1]] = 'O'
 maze[BFS_pos[0]][BFS_pos[1]] = 'B'
 maze[DFS_pos[0]][DFS_pos[1]] = 'P'
-UCS_Path = UCS(UCS_pos, Pacman)
-BFS_Path = BFS(BFS_pos, Pacman)
-DFS_Path = DFS(DFS_pos, Pacman)
+_,UCS_Path = UCS(UCS_pos, Pacman)
+_,BFS_Path = BFS(BFS_pos, Pacman)
+_,DFS_Path = DFS(DFS_pos, Pacman)
 Draw_Path(BFS_Path)
 Draw_Path(DFS_Path)
 Draw_Path(UCS_Path)
@@ -174,19 +180,18 @@ while not found:
             pygame.quit()
             sys.exit()
         elif event.type == UPDATE_PATH_EVENT:
-            UCS_Path = UCS(UCS_pos, Pacman)
-            BFS_Path = BFS(BFS_pos, Pacman)
-            DFS_Path = DFS(DFS_pos, Pacman)
+            _,UCS_Path = UCS(UCS_pos, Pacman)
+            _,BFS_Path = BFS(BFS_pos, Pacman)
+            _,DFS_Path = DFS(DFS_pos, Pacman)
         elif event.type == UPDATE_PATH_EVERY_2S:
-            UCS_Path = UCS(UCS_pos, Pacman)
-            BFS_Path = BFS(BFS_pos, Pacman)
-            DFS_Path = DFS(DFS_pos, Pacman)
+            _,UCS_Path = UCS(UCS_pos, Pacman)
+            _,BFS_Path = BFS(BFS_pos, Pacman)
+            _,DFS_Path = DFS(DFS_pos, Pacman)
             print("Cập nhật đường đi sau 2 giây")
         elif event.type == CHASING:
             maze[UCS_pos[0]][UCS_pos[1]] = 0
             maze[BFS_pos[0]][BFS_pos[1]] = 0
             maze[DFS_pos[0]][DFS_pos[1]] = 0
-            
             next_UCS = UCS_Path[0] if UCS_Path else UCS_pos
             next_BFS = BFS_Path[0] if BFS_Path else BFS_pos
             next_DFS = DFS_Path[0] if DFS_Path else DFS_pos
@@ -206,19 +211,19 @@ while not found:
             else:    
                 if next_UCS in duplicates:
                         maze[next_UCS[0]][next_UCS[1]] = -1
-                        UCS_Path = UCS(UCS_pos, Pacman)
+                        _,UCS_Path = UCS(UCS_pos, Pacman)
                         maze[next_UCS[0]][next_UCS[1]] = 0
                         if UCS_Path:
                             UCS_pos = UCS_Path.pop(0)
                 if next_BFS in duplicates :
                         maze[next_BFS[0]][next_BFS[1]] = -1
-                        BFS_Path = BFS(BFS_pos, Pacman)
+                        _,BFS_Path = BFS(BFS_pos, Pacman)
                         maze[next_BFS[0]][next_BFS[1]] = 0
                         if BFS_Path:
                             BFS_pos = BFS_Path.pop(0)
                 if next_DFS in duplicates:
                     maze[next_DFS[0]][next_DFS[1]] = -1
-                    DFS_Path = DFS(DFS_pos, Pacman)
+                    _,DFS_Path = DFS(DFS_pos, Pacman)
                     maze[next_BFS[0]][next_BFS[1]] = 0
                     if DFS_Path:
                         DFS_pos = DFS_Path.pop(0)

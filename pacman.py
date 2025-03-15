@@ -45,155 +45,82 @@ def Maze_Init():
 #     return (Ghost_posx, Ghost_posy), (Pacman_posx, Pacman_posy)
 
 
+def get_neighbors(pos):
+    """Trả về danh sách ô có thể đi được xung quanh một vị trí."""
+    x, y = pos
+    directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+    neighbors = []
+    for dx, dy in directions:
+        nx, ny = x + dx, y + dy
+        if 0 <= nx < len(maze) and 0 <= ny < len(maze[0]) and maze[nx][ny] in [0, 1]:
+            neighbors.append((nx, ny))
+    return neighbors
+
 def BFS(Ghost, Pacman):
-    traversal=[]
-    q = Queue()
-    visited = set()
-    parent = {}
-    path = []
-
-    visited.add(Ghost)
-    parent[Ghost] = None
-    q.put(Ghost)
-
-    while not q.empty():
-        front = q.get()
-        traversal.append(front)
-
-        up = (front[0] - 1, front[1])
-        down = (front[0] + 1, front[1])
-        left = (front[0], front[1] - 1)
-        right = (front[0], front[1] + 1)
-
-        if maze[up[0]][up[1]] == 0 and not up in visited:
-            visited.add(up)
-            parent[up] = front
-            q.put(up)
-        elif up == Pacman:
-            parent[up] = front
-            traversal.append(up)
-            break
-
-        if maze[left[0]][left[1]] == 0 and not left in visited:
-            visited.add(left)
-            parent[left] = front
-            q.put(left)
-        elif left == Pacman:
-            parent[left] = front
-            traversal.append(left)
-            break
-
-        if maze[down[0]][down[1]] == 0 and not down in visited:
-            visited.add(down)
-            parent[down] = front
-            q.put(down)
-        elif down == Pacman:
-            parent[down] = front
-            traversal.append(down)
-            break
-
-        if maze[right[0]][right[1]] == 0 and not right in visited:
-            visited.add(right)
-            parent[right] = front
-            q.put(right)
-        elif right == Pacman:
-            parent[right] = front
-            traversal.append(right)
-            break
-    
-    current = Pacman
-    while current != None:
-        path.append(current)
-        current = parent[current]
-    path.remove(Pacman)
-    path.remove(Ghost)
-    path.reverse()
-
-    traversal.remove(Ghost)
-    traversal.remove(Pacman)
-
-    return traversal, path
-def UCS(Ghost, Pacman):
+    queue = Queue()
+    queue.put(Ghost)
+    parent = {Ghost: None}
     traversal = []
-    path = []
-    parent = {}
-    pq = PriorityQueue()
-    visited = set()
-    cost = {Ghost: 0}
-    pq.put((0, Ghost))
-    visited.add(Ghost)
-    parent[Ghost] = None
+    while not queue.empty():
+        current = queue.get()
+        traversal.append(current)
+        for neighbor in get_neighbors(current):
+            if neighbor not in parent:
+                if neighbor == Pacman:  # Nếu gặp Pac-Man thì dừng ngay
+                    parent[neighbor] = current
+                    traversal.append(neighbor)
+                    return traversal,reconstruct_path(parent, Ghost, Pacman)
+                parent[neighbor] = current
+                queue.put(neighbor)
+    
+    return traversal, reconstruct_path(parent, Ghost, Pacman)
 
+def UCS(Ghost, Pacman):
+    pq = PriorityQueue()
+    pq.put((0, Ghost))
+    parent = {Ghost: None}
+    cost = {Ghost: 0}
+    traversal = []
     while not pq.empty():
         current_cost, current_node = pq.get()
         traversal.append(current_node)
         if current_node == Pacman:
             break
-        up = (current_node[0] - 1, current_node[1])
-        down = (current_node[0] + 1, current_node[1])
-        left = (current_node[0], current_node[1] - 1)
-        right = (current_node[0], current_node[1] + 1)
-
-        neighbors = [up, down, left, right]
-
-        for neighbor in neighbors:
-            if 0 <= neighbor[0] < len(maze) and 0 <= neighbor[1] < len(maze[0]) and (maze[neighbor[0]][neighbor[1]] == 0 or maze[neighbor[0]][neighbor[1]]==1):
-                new_cost = cost[current_node] + 1
-                if neighbor not in visited or new_cost < cost.get(neighbor, float('inf')):
-                    cost[neighbor] = new_cost
-                    pq.put((new_cost, neighbor))
-                    parent[neighbor] = current_node
-                    visited.add(neighbor)  # Đánh dấu ngay khi thêm vào hàng đợi
-
-    current = Pacman
-    while current is not None:
-        path.append(current)
-        current = parent.get(current)
-    path.reverse()
-    return traversal, path
+        for neighbor in get_neighbors(current_node):
+            new_cost = current_cost + 1
+            if neighbor not in cost or new_cost < cost[neighbor]:
+                cost[neighbor] = new_cost
+                pq.put((new_cost, neighbor))
+                parent[neighbor] = current_node
+    
+    return traversal, reconstruct_path(parent, Ghost, Pacman)
 
 def DFS(Ghost, Pacman):
-    traversal = []
     stack = [Ghost]
-    visited = set()
-    parent = {}
-    path = []
-
-    visited.add(Ghost)
-    parent[Ghost] = None
-
+    parent = {Ghost: None}
+    traversal = []
     while stack:
-        front = stack.pop()
-        traversal.append(front)
+        current = stack.pop()
+        traversal.append(current)
+        for neighbor in get_neighbors(current):
+            if neighbor not in parent:
+                if neighbor == Pacman:  # Nếu gặp Pac-Man thì dừng ngay
+                    parent[neighbor]= current
+                    traversal.append(neighbor)
+                    return traversal,reconstruct_path(parent, Ghost, Pacman)
+                parent[neighbor] = current
+                stack.append(neighbor)
+    
+    return traversal,reconstruct_path(parent, Ghost, Pacman)
 
-        if front == Pacman:
-            break
-
-        up = (front[0] - 1, front[1])
-        down = (front[0] + 1, front[1])
-        left = (front[0], front[1] - 1)
-        right = (front[0], front[1] + 1)
-
-        for move in [up, down, left, right]:
-            if 0 <= move[0] < len(maze) and 0 <= move[1] < len(maze[0]) and maze[move[0]][move[1]] == 0:
-                if move not in visited:
-                    visited.add(move)
-                    parent[move] = front
-                    stack.append(move)
-
-    # Tạo đường đi từ Ghost đến Pacman
-    current = Pacman
+def reconstruct_path(parent, start, end):
+    path = []
+    current = end
     while current and current in parent:
         path.append(current)
         current = parent[current]
-    
-    if path:
-        path.remove(Pacman)
-        path.reverse()
-
-    traversal.remove(Ghost)
-
-    return traversal, path
+    path.reverse()
+    return path[1:] if len(path) > 1 else []
 
 def Draw_Search(traverse):
     for coors in traverse:
