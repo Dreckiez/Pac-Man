@@ -282,7 +282,7 @@ while running:
 
     Draw_Maze()
 
-    # Draw_Search(visualize_search)
+    Draw_Search(visualize_search)
 
     Draw_Path(visualize_path)
 
