@@ -29,3 +29,22 @@ def Gen_PandG(maze):
         maze[g[0]][g[1]] = 10 + i
     
     return pacman_pos, ghosts_pos
+
+def Move_Pacman(maze, pos, direction):
+    new_r, new_c = pos
+
+    if direction == 0:
+        new_c += 1
+    elif direction == 1:
+        new_r -= 1
+    elif direction == 2:
+        new_c -= 1
+    elif direction == 3:
+        new_r += 1
+    else:
+        return pos
+
+    if maze[new_r][new_c] != 0:
+        return pos
+
+    return (new_r, new_c)

@@ -20,6 +20,8 @@ OrangeGhost = pygame.transform.scale(pygame.image.load("assets/ghost_images/oran
 Draw_Search_Event = pygame.USEREVENT + 1
 Draw_Path_Event = pygame.USEREVENT + 2
 Draw_Ghost_Move = pygame.USEREVENT + 3
+Update_Pacman = pygame.USEREVENT + 4
+Update_Ghost_Path = pygame.USEREVENT + 5
 
 Pacman_pos_cases = [(9,7), (2, 3), (6,22), (2,2), (21,10)]
 Ghost_pos_cases = [(27,7), (2,8), (6,2), (30,27), (14,7)]
@@ -39,7 +41,25 @@ argument_number = len(sys.argv)
 Pacman_pos = ()
 Ghosts_pos = [(0,0),(0,0),(0,0),(0,0)]
 
-if argument_number == 2:
+if argument_number == 1:
+    Pacman_pos = (24, 14)
+    Ghosts_pos = [(14,13),(16,13),(14,16),(16,16)]
+
+    traverses, temp_path = search.BFS(Ghosts_pos[0], Pacman_pos, maze)
+    path.append(temp_path)
+    
+    traverses, temp_path = search.DFS(Ghosts_pos[1], Pacman_pos, maze)
+    path.append(temp_path)
+
+    traverses, temp_path = search.UCS(Ghosts_pos[2], Pacman_pos, maze)
+    path.append(temp_path)
+
+    traverses, temp_path = search.A_star(Ghosts_pos[3], Pacman_pos, maze)
+    path.append(temp_path)
+
+    pygame.time.set_timer(Update_Pacman, 280)
+    pygame.time.set_timer(Draw_Ghost_Move, 280)
+elif argument_number == 2:
     if sys.argv[1] == "all":
         Pacman_pos, Ghosts_pos = utils.Gen_PandG(maze)
         traverses, temp_path = search.BFS(Ghosts_pos[0], Pacman_pos, maze)
@@ -156,12 +176,27 @@ current_cells = 0
 visualize_search = []
 visualize_path = []
 visualize_move = []
+direction = 0
 
 while running:
+
+    for ghost in Ghosts_pos:
+        if Pacman_pos == ghost:
+            print("You Lose")
+            running = False
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                direction = 1
+            elif event.key == pygame.K_RIGHT:
+                direction = 0
+            elif event.key == pygame.K_LEFT:
+                direction = 2
+            elif event.key == pygame.K_DOWN:
+                direction = 3
         elif event.type == Draw_Search_Event:
             visualize_search.append(traverses[current_cells])
             if len(visualize_search) == len(traverses):
@@ -186,11 +221,38 @@ while running:
             if current_cells < len(path[3]):
                 Ghosts_pos[3] = path[3][current_cells]
             current_cells += 1
+        elif event.type == Update_Pacman:
+            Old_pos = Pacman_pos
+            Pacman_pos = utils.Move_Pacman(maze, Pacman_pos, direction)
+            if Pacman_pos != Old_pos:
+                path.clear()
+                current_cells = 0
+                traverses, temp_path = search.BFS(Ghosts_pos[0], Pacman_pos, maze)
+                path.append(temp_path)
+                
+                traverses, temp_path = search.DFS(Ghosts_pos[1], Pacman_pos, maze)
+                path.append(temp_path)
+
+                traverses, temp_path = search.UCS(Ghosts_pos[2], Pacman_pos, maze)
+                path.append(temp_path)
+
+                traverses, temp_path = search.A_star(Ghosts_pos[3], Pacman_pos, maze)
+                path.append(temp_path)
+                if current_cells < len(path[0]):
+                    Ghosts_pos[0] = path[0][current_cells]
+                if current_cells < len(path[1]):
+                    Ghosts_pos[1] = path[1][current_cells]
+                if current_cells < len(path[2]):
+                    Ghosts_pos[2] = path[2][current_cells]
+                if current_cells < len(path[3]):
+                    Ghosts_pos[3] = path[3][current_cells]
+                current_cells += 1
+
 
     screen.fill("black")
 
     draw.Draw_Maze(screen, maze)
-    draw.Draw_Pacman(screen, Pacman_Img, Pacman_pos)
+    draw.Draw_Pacman(screen, Pacman_Img, Pacman_pos, direction)
     draw.Draw_Ghosts(screen, BlueGhost, PinkGhost, OrangeGhost, RedGhost, Ghosts_pos)
 
     draw.Draw_Search(screen, visualize_search)
