@@ -31,9 +31,18 @@ def Draw_Maze(screen, maze):
             elif maze[i][j] == 9:
                 pygame.draw.line(screen, "white", pygame.Vector2(j * 25 + center, i * 25 + 25*0.5), pygame.Vector2(j * 25 + 25 + center, i * 25 + 25*0.5), 3)
 
-def Draw_Pacman(screen, img, pos):
+def Draw_Pacman(screen, img, pos, direction):
     center = 125
-    screen.blit(img, (pos[1] * 25 - 7 + center, pos[0] * 25 - 5))
+    # direction = 0 - Right, 1 - Up, 2 - Left, 3 - Down
+    if direction == 0:
+        screen.blit(img, (pos[1] * 25 - 7 + center, pos[0] * 25 - 5))
+    elif direction == 1:
+        screen.blit(pygame.transform.rotate(img, 90), (pos[1] * 25 - 7 + center, pos[0] * 25 - 5))
+    elif direction == 2:
+        screen.blit(pygame.transform.flip(img, True, False), (pos[1] * 25 - 7 + center, pos[0] * 25 - 5))
+    elif direction == 3:
+        screen.blit(pygame.transform.rotate(img, 270), (pos[1] * 25 - 7 + center, pos[0] * 25 - 5))
+
 
 def Draw_Ghosts(screen, BlueGhost, PinkGhost, OrangeGhost, RedGhost, GhostPos):
     center = 125
