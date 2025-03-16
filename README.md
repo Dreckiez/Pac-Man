@@ -18,6 +18,11 @@ Ghi sai số thứ tự Test Case (có 5 cái mà ghi 6) báo: Invalid Test Case
 python pacman.py all
 ```
 
+- Level 6:
+```bash
+python pacman.py
+```
+
 ### Biến
 - Pacman_pos_cases, Ghost_pos_cases: 1 list chứa các vị trí được chọn sẵn để lấy data từ các Search
 - traverses, path: dùng để lưu những node đã search và path đi từ Ghost đến Pacman
@@ -30,7 +35,8 @@ python pacman.py all
 - Từ Level 1-4:
   - Chạy thuật toán trước, lưu list các node đã search và path (Biến traverses, path)
   - Add từng node trong traverses, path vào visualize_search, visualize_path để vẽ lại cách search hoạt động và path
-- Level 5:??
-- Level 6: Không cần Visualize đường đi mà chỉ cần cho Ghost di chuyển theo path
-  - Có thể cho Ghost cứ 2s lại update vị trí của Pacman => update path mới => di chuyển theo path mới đó
-  - Trong khoảng thời gian 2s ko update sẽ chạy theo path cũ (nếu chưa kịp update path mới mà đã chạy hết path thì sao??)
+- Level 5:
+  - path là mảng 2 chiều: mỗi row lưu 1 path của 1 search algo => có 4 row
+  - Ghost_pos là mảng lưu vị trí của 4 Ghost, trigger event Draw_Ghost_Move thì sẽ update Ghost_pos bằng vị trí tiếp theo trong path => Ghost di chuyển theo path
+- Level 6:
+  - Pacman update vị trí mới thì Ghost update lại Path
